@@ -3,6 +3,8 @@ package tools
 import (
 	"encoding/json"
 	"strings"
+
+	"github.com/sipeed/picoclaw/pkg/providers"
 )
 
 const (
@@ -42,6 +44,11 @@ type ToolResult struct {
 	// Media contains media store refs produced by this tool.
 	// When non-empty, the agent will publish these as OutboundMediaMessage.
 	Media []string `json:"media,omitempty"`
+
+	// Messages holds the ephemeral session history after execution.
+	// Only populated by SubTurn executions; used by evaluator_optimizer
+	// to carry stateful worker context across evaluation iterations.
+	Messages []providers.Message `json:"-"`
 
 	// ArtifactTags exposes local artifact paths back to the LLM in a structured
 	// form, e.g. "[file:/tmp/example.png]". This is used when a tool produced a
