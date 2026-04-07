@@ -288,6 +288,143 @@ func TestAgentConfig_ParsesDispatchRules(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_MigratesLegacyBindingsToDispatchRules(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.json")
+	raw := `{
+		"version": 2,
+		"agents": {
+			"defaults": {
+				"workspace": "~/.picoclaw/workspace",
+				"model": "glm-4.7"
+			},
+			"list": [
+				{ "id": "main", "default": true },
+				{ "id": "support" },
+				{ "id": "ops" },
+				{ "id": "slack" }
+			]
+		},
+		"bindings": [
+			{
+				"agent_id": "support",
+				"match": {
+					"channel": "telegram",
+					"peer": { "kind": "group", "id": "-100123" }
+				}
+			},
+			{
+				"agent_id": "ops",
+				"match": {
+					"channel": "discord",
+					"guild_id": "guild-1"
+				}
+			},
+			{
+				"agent_id": "slack",
+				"match": {
+					"channel": "slack",
+					"account_id": "*"
+				}
+			}
+		]
+	}`
+	if err := os.WriteFile(configPath, []byte(raw), 0o644); err != nil {
+		t.Fatalf("WriteFile(configPath): %v", err)
+	}
+
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig() error: %v", err)
+	}
+	if cfg.Agents.Dispatch == nil {
+		t.Fatal("Agents.Dispatch should not be nil")
+	}
+	if len(cfg.Agents.Dispatch.Rules) != 3 {
+		t.Fatalf("Dispatch.Rules len = %d, want 3", len(cfg.Agents.Dispatch.Rules))
+	}
+
+	first := cfg.Agents.Dispatch.Rules[0]
+	if first.Agent != "support" {
+		t.Fatalf("first.Agent = %q, want %q", first.Agent, "support")
+	}
+	if first.When.Channel != "telegram" || first.When.Chat != "group:-100123" {
+		t.Fatalf("first.When = %+v", first.When)
+	}
+	if first.When.Account != legacyDefaultAccountID {
+		t.Fatalf("first.When.Account = %q, want %q", first.When.Account, legacyDefaultAccountID)
+	}
+
+	second := cfg.Agents.Dispatch.Rules[1]
+	if second.Agent != "ops" || second.When.Space != "guild:guild-1" {
+		t.Fatalf("second = %+v", second)
+	}
+
+	third := cfg.Agents.Dispatch.Rules[2]
+	if third.Agent != "slack" {
+		t.Fatalf("third.Agent = %q, want %q", third.Agent, "slack")
+	}
+	if third.When.Channel != "slack" || third.When.Account != "" {
+		t.Fatalf("third.When = %+v", third.When)
+	}
+}
+
+func TestLoadConfig_PrefersDispatchRulesOverLegacyBindings(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.json")
+	raw := `{
+		"version": 2,
+		"agents": {
+			"defaults": {
+				"workspace": "~/.picoclaw/workspace",
+				"model": "glm-4.7"
+			},
+			"list": [
+				{ "id": "main", "default": true },
+				{ "id": "support" }
+			],
+			"dispatch": {
+				"rules": [
+					{
+						"name": "explicit",
+						"agent": "support",
+						"when": {
+							"channel": "telegram",
+							"chat": "group:-100123"
+						}
+					}
+				]
+			}
+		},
+		"bindings": [
+			{
+				"agent_id": "main",
+				"match": {
+					"channel": "telegram",
+					"account_id": "*"
+				}
+			}
+		]
+	}`
+	if err := os.WriteFile(configPath, []byte(raw), 0o644); err != nil {
+		t.Fatalf("WriteFile(configPath): %v", err)
+	}
+
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig() error: %v", err)
+	}
+	if cfg.Agents.Dispatch == nil {
+		t.Fatal("Agents.Dispatch should not be nil")
+	}
+	if len(cfg.Agents.Dispatch.Rules) != 1 {
+		t.Fatalf("Dispatch.Rules len = %d, want 1", len(cfg.Agents.Dispatch.Rules))
+	}
+	if cfg.Agents.Dispatch.Rules[0].Name != "explicit" {
+		t.Fatalf("Dispatch.Rules[0].Name = %q, want %q", cfg.Agents.Dispatch.Rules[0].Name, "explicit")
+	}
+}
+
 // TestDefaultConfig_HeartbeatEnabled verifies heartbeat is enabled by default
 func TestDefaultConfig_HeartbeatEnabled(t *testing.T) {
 	cfg := DefaultConfig()

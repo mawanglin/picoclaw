@@ -1105,6 +1105,8 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("unsupported config version: %d", versionInfo.Version)
 	}
 
+	applyLegacyBindingsMigration(data, cfg)
+
 	if err = env.Parse(cfg); err != nil {
 		return nil, err
 	}

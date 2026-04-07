@@ -224,11 +224,17 @@ func (s *JSONLStore) UpsertSessionMeta(
 }
 
 // ResolveSessionKey returns the canonical session key for a candidate key.
-// It first checks direct key existence, then scans metadata aliases on miss.
+// It short-circuits direct canonical keys when possible, then scans metadata
+// once to resolve aliases or canonical metadata keys.
 func (s *JSONLStore) ResolveSessionKey(_ context.Context, sessionKey string) (string, bool, error) {
 	sessionKey = strings.TrimSpace(sessionKey)
 	if sessionKey == "" {
 		return "", false, nil
+	}
+
+	hasDirectSession := s.sessionExists(sessionKey)
+	if hasDirectSession && shouldShortCircuitSessionResolve(sessionKey) {
+		return sessionKey, true, nil
 	}
 
 	entries, err := os.ReadDir(s.dir)
@@ -236,21 +242,32 @@ func (s *JSONLStore) ResolveSessionKey(_ context.Context, sessionKey string) (st
 		return "", false, fmt.Errorf("memory: read sessions dir: %w", err)
 	}
 
+	var directMetaMatch string
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".meta.json") {
 			continue
 		}
+
 		data, readErr := os.ReadFile(filepath.Join(s.dir, entry.Name()))
 		if readErr != nil {
-			return "", false, fmt.Errorf("memory: read meta: %w", readErr)
+			log.Printf("memory: skipping unreadable meta %s: %v", entry.Name(), readErr)
+			continue
 		}
+
 		var meta SessionMeta
 		if err := json.Unmarshal(data, &meta); err != nil {
-			return "", false, fmt.Errorf("memory: decode meta: %w", err)
+			log.Printf("memory: skipping corrupt meta %s: %v", entry.Name(), err)
+			continue
 		}
+
 		if meta.Key == "" {
 			continue
 		}
+
+		if meta.Key == sessionKey {
+			directMetaMatch = meta.Key
+		}
+
 		for _, alias := range meta.Aliases {
 			if alias == sessionKey && meta.Key != sessionKey {
 				return meta.Key, true, nil
@@ -258,28 +275,23 @@ func (s *JSONLStore) ResolveSessionKey(_ context.Context, sessionKey string) (st
 		}
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".meta.json") {
-			continue
-		}
-		data, readErr := os.ReadFile(filepath.Join(s.dir, entry.Name()))
-		if readErr != nil {
-			return "", false, fmt.Errorf("memory: read meta: %w", readErr)
-		}
-		var meta SessionMeta
-		if err := json.Unmarshal(data, &meta); err != nil {
-			return "", false, fmt.Errorf("memory: decode meta: %w", err)
-		}
-		if meta.Key == sessionKey {
-			return meta.Key, true, nil
-		}
+	if directMetaMatch != "" {
+		return directMetaMatch, true, nil
 	}
 
-	if s.sessionExists(sessionKey) {
+	if hasDirectSession {
 		return sessionKey, true, nil
 	}
 
 	return "", false, nil
+}
+
+func shouldShortCircuitSessionResolve(sessionKey string) bool {
+	sessionKey = strings.TrimSpace(strings.ToLower(sessionKey))
+	if sessionKey == "" {
+		return false
+	}
+	return !strings.ContainsAny(sessionKey, ":/\\")
 }
 
 // readMessages reads valid JSON lines from a .jsonl file, skipping
