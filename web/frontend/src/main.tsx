@@ -3,6 +3,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
 
+import { useHighlightTheme } from "./hooks/use-highlight-theme"
 import "./i18n"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
@@ -22,14 +23,22 @@ declare module "@tanstack/react-router" {
   }
 }
 
+function AppProviders() {
+  useHighlightTheme()
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  )
+}
+
 const rootElement = document.getElementById("root")!
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <AppProviders />
     </StrictMode>,
   )
 }

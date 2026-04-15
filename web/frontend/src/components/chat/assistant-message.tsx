@@ -64,7 +64,7 @@ export function AssistantMessage({
       >
         <div
           className={cn(
-            "prose dark:prose-invert prose-pre:my-2 prose-pre:overflow-x-auto prose-pre:rounded-lg prose-pre:border prose-pre:bg-zinc-950 prose-pre:p-3 max-w-none [overflow-wrap:anywhere] break-words",
+            "prose dark:prose-invert prose-pre:my-2 prose-pre:overflow-x-auto prose-pre:rounded-lg prose-pre:border prose-pre:bg-zinc-100 prose-pre:p-0 dark:prose-pre:bg-zinc-950 max-w-none [overflow-wrap:anywhere] break-words",
             isThought
               ? "prose-p:my-1.5 p-3 text-[13px] leading-relaxed opacity-90"
               : "prose-p:my-2 p-4 text-[15px] leading-relaxed",
