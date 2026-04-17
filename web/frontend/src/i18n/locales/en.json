@@ -13,6 +13,7 @@
     "show_more_channels": "More",
     "show_less_channels": "Less",
     "config": "Config",
+    "cron": "Cron Jobs",
     "logs": "Logs"
   },
   "launcherLogin": {
@@ -639,6 +640,79 @@
       "format_error": "Invalid JSON format.",
       "format": "Format",
       "unsaved_changes": "You have unsaved changes."
+    },
+    "cron": {
+      "title": "Cron Jobs",
+      "tabs": {
+        "jobs": "Jobs",
+        "history": "Execution History"
+      },
+      "table": {
+        "name": "Name",
+        "schedule": "Schedule",
+        "channel": "Channel",
+        "lastRun": "Last Run",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "ok": "OK",
+        "error": "Error",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "form": {
+        "name": "Name",
+        "schedule": "Schedule",
+        "scheduleType": "Schedule Type",
+        "oneTime": "One-time",
+        "recurring": "Recurring",
+        "cronExpr": "Cron expression",
+        "message": "Message",
+        "command": "Command",
+        "channel": "Channel",
+        "to": "To",
+        "timezone": "Timezone",
+        "advanced": "Advanced mode"
+      },
+      "actions": {
+        "create": "New Job",
+        "edit": "Edit Job",
+        "delete": "Delete",
+        "enable": "Enable",
+        "disable": "Disable",
+        "trigger": "Trigger",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "stats": {
+        "totalJobs": "Total Jobs",
+        "enabledJobs": "Enabled",
+        "runs24h": "Runs (24h)",
+        "successRate": "Success Rate"
+      },
+      "empty": {
+        "noJobs": "No cron jobs yet.",
+        "noHistory": "No execution history."
+      },
+      "toast": {
+        "created": "Job created.",
+        "updated": "Job updated.",
+        "deleted": "Job deleted.",
+        "triggered": "Job triggered.",
+        "enabled": "Job enabled.",
+        "disabled": "Job disabled.",
+        "error": "Operation failed."
+      },
+      "history": {
+        "trigger": "Trigger",
+        "duration": "Duration",
+        "output": "Output",
+        "view": "View",
+        "scheduled": "Scheduled",
+        "manual": "Manual"
+      }
     },
     "logs": {
       "log_level_error": "Failed to update log level.",

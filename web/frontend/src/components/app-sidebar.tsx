@@ -3,6 +3,7 @@ import {
   IconAtom,
   IconChevronsDown,
   IconChevronsUp,
+  IconClock,
   IconKey,
   IconListDetails,
   IconMessageCircle,
@@ -159,6 +160,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: "navigation.config",
             url: "/config",
             icon: IconSettings,
+            translateTitle: true,
+          },
+          {
+            title: "navigation.cron",
+            url: "/config/cron",
+            icon: IconClock,
             translateTitle: true,
           },
           {
