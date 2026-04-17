@@ -63,6 +63,7 @@ const (
 
 type services struct {
 	CronService      *cron.CronService
+	CronHistory      *cron.HistoryStore
 	HeartbeatService *heartbeat.HeartbeatService
 	MediaStore       media.MediaStore
 	ChannelManager   *channels.Manager
@@ -349,7 +350,7 @@ func setupAndStartServices(
 
 	execTimeout := time.Duration(cfg.Tools.Cron.ExecTimeoutMinutes) * time.Minute
 	var err error
-	runningServices.CronService, err = setupCronTool(
+	runningServices.CronService, runningServices.CronHistory, err = setupCronTool(
 		agentLoop,
 		msgBus,
 		cfg.WorkspacePath(),
@@ -417,6 +418,16 @@ func setupAndStartServices(
 	runningServices.authToken = authToken
 	runningServices.HealthServer = health.NewServer(listenResult.ProbeHost, cfg.Gateway.Port, authToken)
 
+	if runningServices.CronService != nil && runningServices.CronHistory != nil {
+		cronAPI := cron.NewCronAPIHandler(
+			runningServices.CronService,
+			runningServices.CronHistory,
+			authToken,
+			cfg.Tools.Cron.AllowCommand,
+		)
+		cronAPI.RegisterOnMux(runningServices.HealthServer.Mux())
+	}
+
 	var listenAddr string
 	if len(listenResult.Listeners) > 0 {
 		listenAddr = listenResult.Listeners[0].Addr().String()
@@ -483,6 +494,9 @@ func stopAndCleanupServices(runningServices *services, shutdownTimeout time.Dura
 	}
 	if runningServices.CronService != nil {
 		runningServices.CronService.Stop()
+	}
+	if runningServices.CronHistory != nil {
+		runningServices.CronHistory.Close()
 	}
 	if runningServices.MediaStore != nil {
 		if fms, ok := runningServices.MediaStore.(*media.FileMediaStore); ok {
@@ -587,7 +601,7 @@ func restartServices(
 
 	execTimeout := time.Duration(cfg.Tools.Cron.ExecTimeoutMinutes) * time.Minute
 	var err error
-	runningServices.CronService, err = setupCronTool(
+	runningServices.CronService, runningServices.CronHistory, err = setupCronTool(
 		al,
 		msgBus,
 		cfg.WorkspacePath(),
@@ -762,17 +776,24 @@ func setupCronTool(
 	restrict bool,
 	execTimeout time.Duration,
 	cfg *config.Config,
-) (*cron.CronService, error) {
+) (*cron.CronService, *cron.HistoryStore, error) {
 	cronStorePath := filepath.Join(workspace, "cron", "jobs.json")
 
 	cronService := cron.NewCronService(cronStorePath, nil)
 
+	historyDBPath := filepath.Join(workspace, "cron", "history.db")
+	historyStore, err := cron.NewHistoryStore(historyDBPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("create cron history store: %w", err)
+	}
+	cronService.SetListener(historyStore)
+
 	var cronTool *tools.CronTool
 	if cfg.Tools.IsToolEnabled("cron") {
-		var err error
 		cronTool, err = tools.NewCronTool(cronService, agentLoop, msgBus, workspace, restrict, execTimeout, cfg)
 		if err != nil {
-			return nil, fmt.Errorf("critical error during CronTool initialization: %w", err)
+			historyStore.Close()
+			return nil, nil, fmt.Errorf("critical error during CronTool initialization: %w", err)
 		}
 
 		agentLoop.RegisterTool(cronTool)
@@ -785,7 +806,7 @@ func setupCronTool(
 		})
 	}
 
-	return cronService, nil
+	return cronService, historyStore, nil
 }
 
 // overridePicoToken replaces the pico channel token with the one from the PID file.

@@ -15,6 +15,7 @@ import (
 
 type Server struct {
 	server     *http.Server
+	mux        *http.ServeMux
 	mu         sync.RWMutex
 	ready      bool
 	checks     map[string]Check
@@ -40,6 +41,7 @@ type StatusResponse struct {
 func NewServer(host string, port int, token string) *Server {
 	mux := http.NewServeMux()
 	s := &Server{
+		mux:       mux,
 		ready:     false,
 		checks:    make(map[string]Check),
 		startTime: time.Now(),
@@ -110,6 +112,12 @@ func (s *Server) RegisterCheck(name string, checkFn func() (bool, string)) {
 		Message:   msg,
 		Timestamp: time.Now(),
 	}
+}
+
+// Mux returns the underlying ServeMux so that additional routes can be
+// registered on the same listener used by the health server.
+func (s *Server) Mux() *http.ServeMux {
+	return s.mux
 }
 
 // SetReloadFunc sets the callback function for config reload.
