@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 
 import { CronJobList } from "@/components/cron/cron-job-list"
 import { CronJobForm } from "@/components/cron/cron-job-form"
+import { CronHistory } from "@/components/cron/cron-history"
 import type { CronJob } from "@/api/cron"
 
 export function CronPage() {
@@ -65,11 +66,7 @@ export function CronPage() {
         <CronJobList onEdit={handleEdit} onNew={handleNew} />
       )}
 
-      {activeTab === "history" && (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-          {t("pages.cron.empty.noHistory")}
-        </div>
-      )}
+      {activeTab === "history" && <CronHistory />}
 
       <CronJobForm
         open={formOpen}
