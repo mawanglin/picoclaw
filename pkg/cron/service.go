@@ -61,6 +61,7 @@ type CronService struct {
 	storePath string
 	store     *CronStore
 	onJob     JobHandler
+	listener  ExecutionListener // optional, nil-safe
 	mu        sync.RWMutex
 	running   bool
 	stopChan  chan struct{}
@@ -235,12 +236,14 @@ func (cs *CronService) executeJobByID(jobID string) {
 	log.Printf("[cron] ▶ executing job '%s' (id: %s, schedule: %s, channel: %s)",
 		callbackJob.Name, jobID, callbackJob.Schedule.Kind, callbackJob.Payload.Channel)
 
+	var output string
 	var err error
 	if cs.onJob != nil {
-		_, err = cs.onJob(callbackJob)
+		output, err = cs.onJob(callbackJob)
 	}
 
-	execDuration := time.Now().UnixMilli() - startTime
+	finishTime := time.Now().UnixMilli()
+	execDuration := finishTime - startTime
 
 	// Now acquire lock to update state
 	cs.mu.Lock()
@@ -297,6 +300,27 @@ func (cs *CronService) executeJobByID(jobID string) {
 
 	if err := cs.saveStoreUnsafe(); err != nil {
 		log.Printf("[cron] failed to save store: %v", err)
+	}
+
+	listenerStatus := "ok"
+	listenerErrMsg := ""
+	if err != nil {
+		listenerStatus = "error"
+		listenerErrMsg = err.Error()
+	}
+
+	if cs.listener != nil {
+		cs.listener.OnExecutionComplete(ExecutionRecord{
+			JobID:      callbackJob.ID,
+			JobName:    callbackJob.Name,
+			Trigger:    "scheduled",
+			Status:     listenerStatus,
+			ErrorMsg:   listenerErrMsg,
+			Output:     output,
+			DurationMS: execDuration,
+			StartedAt:  startTime,
+			FinishedAt: finishTime,
+		})
 	}
 }
 
@@ -375,6 +399,68 @@ func (cs *CronService) SetOnJob(handler JobHandler) {
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 	cs.onJob = handler
+}
+
+func (cs *CronService) SetListener(l ExecutionListener) {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	cs.listener = l
+}
+
+func (cs *CronService) TriggerJob(jobID string) error {
+	cs.mu.RLock()
+	var found *CronJob
+	for i := range cs.store.Jobs {
+		if cs.store.Jobs[i].ID == jobID {
+			cp := cs.store.Jobs[i]
+			found = &cp
+			break
+		}
+	}
+	cs.mu.RUnlock()
+
+	if found == nil {
+		return fmt.Errorf("job not found: %s", jobID)
+	}
+
+	startMS := time.Now().UnixMilli()
+	output, execErr := cs.onJob(found)
+	finishMS := time.Now().UnixMilli()
+
+	status := "ok"
+	errMsg := ""
+	if execErr != nil {
+		status = "error"
+		errMsg = execErr.Error()
+	}
+
+	cs.mu.Lock()
+	for i := range cs.store.Jobs {
+		if cs.store.Jobs[i].ID == jobID {
+			cs.store.Jobs[i].State.LastRunAtMS = &startMS
+			cs.store.Jobs[i].State.LastStatus = status
+			cs.store.Jobs[i].State.LastError = errMsg
+			break
+		}
+	}
+	cs.saveStoreUnsafe()
+	cs.mu.Unlock()
+
+	if cs.listener != nil {
+		cs.listener.OnExecutionComplete(ExecutionRecord{
+			JobID:      found.ID,
+			JobName:    found.Name,
+			Trigger:    "manual",
+			Status:     status,
+			ErrorMsg:   errMsg,
+			Output:     output,
+			DurationMS: finishMS - startMS,
+			StartedAt:  startMS,
+			FinishedAt: finishMS,
+		})
+	}
+
+	return nil
 }
 
 func (cs *CronService) loadStore() error {

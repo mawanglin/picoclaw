@@ -235,3 +235,124 @@ func TestCronService_ConcurrentAccess(t *testing.T) {
 
 	wg.Wait()
 }
+
+type testListener struct {
+	mu      sync.Mutex
+	records []ExecutionRecord
+}
+
+func (l *testListener) OnExecutionComplete(rec ExecutionRecord) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.records = append(l.records, rec)
+}
+
+func TestCronService_SetListener(t *testing.T) {
+	dir := t.TempDir()
+	storePath := filepath.Join(dir, "jobs.json")
+	svc := NewCronService(storePath, func(job *CronJob) (string, error) {
+		return "", nil
+	})
+	listener := &testListener{}
+	svc.SetListener(listener)
+	if listener == nil {
+		t.Fatal("listener should not be nil")
+	}
+}
+
+func TestCronService_TriggerJob(t *testing.T) {
+	dir := t.TempDir()
+	storePath := filepath.Join(dir, "jobs.json")
+	var handledIDs []string
+	var mu sync.Mutex
+	svc := NewCronService(storePath, func(job *CronJob) (string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		handledIDs = append(handledIDs, job.ID)
+		return "ok", nil
+	})
+	svc.Start()
+	defer svc.Stop()
+
+	everyMS := int64(3600000)
+	job, err := svc.AddJob("test", CronSchedule{Kind: "every", EveryMS: &everyMS}, "hello", "", "")
+	if err != nil {
+		t.Fatalf("AddJob failed: %v", err)
+	}
+
+	// Disable job, then trigger manually — should still execute.
+	svc.EnableJob(job.ID, false)
+
+	err = svc.TriggerJob(job.ID)
+	if err != nil {
+		t.Fatalf("TriggerJob failed: %v", err)
+	}
+
+	mu.Lock()
+	found := false
+	for _, id := range handledIDs {
+		if id == job.ID {
+			found = true
+			break
+		}
+	}
+	mu.Unlock()
+
+	if !found {
+		t.Error("TriggerJob did not execute the job handler")
+	}
+}
+
+func TestCronService_TriggerJob_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	storePath := filepath.Join(dir, "jobs.json")
+	svc := NewCronService(storePath, func(job *CronJob) (string, error) {
+		return "", nil
+	})
+	svc.Start()
+	defer svc.Stop()
+
+	err := svc.TriggerJob("nonexistent")
+	if err == nil {
+		t.Error("TriggerJob should return error for nonexistent job")
+	}
+}
+
+func TestCronService_ListenerCalledOnTrigger(t *testing.T) {
+	dir := t.TempDir()
+	storePath := filepath.Join(dir, "jobs.json")
+	svc := NewCronService(storePath, func(job *CronJob) (string, error) {
+		return "output-data", nil
+	})
+	listener := &testListener{}
+	svc.SetListener(listener)
+	svc.Start()
+	defer svc.Stop()
+
+	everyMS := int64(3600000)
+	job, err := svc.AddJob("listener-test", CronSchedule{Kind: "every", EveryMS: &everyMS}, "hello", "", "")
+	if err != nil {
+		t.Fatalf("AddJob failed: %v", err)
+	}
+
+	err = svc.TriggerJob(job.ID)
+	if err != nil {
+		t.Fatalf("TriggerJob failed: %v", err)
+	}
+
+	listener.mu.Lock()
+	defer listener.mu.Unlock()
+	if len(listener.records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(listener.records))
+	}
+	rec := listener.records[0]
+	if rec.Trigger != "manual" {
+		t.Errorf("expected trigger 'manual', got '%s'", rec.Trigger)
+	}
+	if rec.Status != "ok" {
+		t.Errorf("expected status 'ok', got '%s'", rec.Status)
+	}
+	if rec.Output != "output-data" {
+		t.Errorf("expected output 'output-data', got '%s'", rec.Output)
+	}
+}
