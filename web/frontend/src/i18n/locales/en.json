@@ -690,7 +690,11 @@
         "totalJobs": "Total Jobs",
         "enabledJobs": "Enabled",
         "runs24h": "Runs (24h)",
-        "successRate": "Success Rate"
+        "successRate": "Success Rate",
+        "trend7d": "7-Day Trend",
+        "success": "Success",
+        "errors": "Errors",
+        "noData": "No data for this period."
       },
       "empty": {
         "noJobs": "No cron jobs yet.",

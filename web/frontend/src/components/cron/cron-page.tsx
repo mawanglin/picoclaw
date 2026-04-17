@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { CronJobList } from "@/components/cron/cron-job-list"
 import { CronJobForm } from "@/components/cron/cron-job-form"
 import { CronHistory } from "@/components/cron/cron-history"
+import { CronStats } from "@/components/cron/cron-stats"
 import type { CronJob } from "@/api/cron"
 
 export function CronPage() {
@@ -36,6 +37,8 @@ export function CronPage() {
           {t("pages.cron.title")}
         </h1>
       </div>
+
+      <CronStats />
 
       <div className="flex gap-1 border-b">
         <button

@@ -690,7 +690,11 @@
         "totalJobs": "任务总数",
         "enabledJobs": "已启用",
         "runs24h": "24 小时运行次数",
-        "successRate": "成功率"
+        "successRate": "成功率",
+        "trend7d": "7 天趋势",
+        "success": "成功",
+        "errors": "失败",
+        "noData": "该时段暂无数据。"
       },
       "empty": {
         "noJobs": "暂无定时任务。",
