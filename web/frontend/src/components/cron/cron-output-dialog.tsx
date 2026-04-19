@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next"
 import dayjs from "dayjs"
+import { useTranslation } from "react-i18next"
 
 import type { ExecutionRecord } from "@/api/cron"
 import { Badge } from "@/components/ui/badge"
@@ -55,13 +55,13 @@ export function CronOutputDialog({
           </div>
 
           {record.status === "error" && record.errorMsg && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
               {record.errorMsg}
             </div>
           )}
 
           {record.output && (
-            <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 font-mono text-xs leading-relaxed">
+            <pre className="bg-muted max-h-80 overflow-auto rounded-md p-3 font-mono text-xs leading-relaxed">
               {record.output}
             </pre>
           )}

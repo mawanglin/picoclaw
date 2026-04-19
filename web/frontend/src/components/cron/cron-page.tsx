@@ -1,11 +1,11 @@
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 
-import { CronJobList } from "@/components/cron/cron-job-list"
-import { CronJobForm } from "@/components/cron/cron-job-form"
-import { CronHistory } from "@/components/cron/cron-history"
-import { CronStats } from "@/components/cron/cron-stats"
 import type { CronJob } from "@/api/cron"
+import { CronHistory } from "@/components/cron/cron-history"
+import { CronJobForm } from "@/components/cron/cron-job-form"
+import { CronJobList } from "@/components/cron/cron-job-list"
+import { CronStats } from "@/components/cron/cron-stats"
 
 export function CronPage() {
   const { t } = useTranslation()
@@ -45,7 +45,7 @@ export function CronPage() {
           type="button"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "jobs"
-              ? "border-b-2 border-foreground text-foreground"
+              ? "border-foreground text-foreground border-b-2"
               : "text-muted-foreground hover:text-foreground"
           }`}
           onClick={() => setActiveTab("jobs")}
@@ -56,7 +56,7 @@ export function CronPage() {
           type="button"
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === "history"
-              ? "border-b-2 border-foreground text-foreground"
+              ? "border-foreground text-foreground border-b-2"
               : "text-muted-foreground hover:text-foreground"
           }`}
           onClick={() => setActiveTab("history")}

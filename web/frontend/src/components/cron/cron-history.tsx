@@ -1,13 +1,13 @@
-import * as React from "react"
-import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
+import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { getCronHistory, listCronJobs } from "@/api/cron"
 import type { ExecutionRecord } from "@/api/cron"
+import { CronOutputDialog } from "@/components/cron/cron-output-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CronOutputDialog } from "@/components/cron/cron-output-dialog"
 
 const PAGE_SIZE = 20
 
@@ -53,7 +53,7 @@ export function CronHistory() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[200px] items-center justify-center">
         {t("labels.loading")}
       </div>
     )
@@ -63,7 +63,7 @@ export function CronHistory() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <select
-          className="rounded-md border bg-background px-3 py-1.5 text-sm"
+          className="bg-background rounded-md border px-3 py-1.5 text-sm"
           value={jobId}
           onChange={handleFilterChange}
         >
@@ -77,7 +77,7 @@ export function CronHistory() {
       </div>
 
       {records.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+        <div className="text-muted-foreground flex min-h-[200px] items-center justify-center">
           {t("pages.cron.empty.noHistory")}
         </div>
       ) : (
@@ -85,7 +85,7 @@ export function CronHistory() {
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/40">
+                <tr className="bg-muted/40 border-b">
                   <th className="px-4 py-2.5 text-left font-medium">
                     {t("pages.cron.table.name")}
                   </th>
@@ -110,12 +110,12 @@ export function CronHistory() {
                 {records.map((record) => (
                   <tr
                     key={record.id}
-                    className="border-b last:border-b-0 transition-colors hover:bg-muted/20"
+                    className="hover:bg-muted/20 border-b transition-colors last:border-b-0"
                   >
                     <td className="px-4 py-2.5 font-medium">
                       {record.jobName}
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground">
+                    <td className="text-muted-foreground px-4 py-2.5">
                       {dayjs(record.startedAt).format("MM-DD HH:mm:ss")}
                     </td>
                     <td className="px-4 py-2.5">
@@ -136,13 +136,13 @@ export function CronHistory() {
                         </Badge>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    <td className="text-muted-foreground px-4 py-2.5 font-mono text-xs">
                       {formatDuration(record.durationMs)}
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button
                         type="button"
-                        className="text-sm text-primary underline-offset-4 hover:underline"
+                        className="text-primary text-sm underline-offset-4 hover:underline"
                         onClick={() => setSelectedRecord(record)}
                       >
                         {t("pages.cron.history.view")}
@@ -155,7 +155,7 @@ export function CronHistory() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               Page {page} of {totalPages}
             </span>
             <div className="flex gap-2">

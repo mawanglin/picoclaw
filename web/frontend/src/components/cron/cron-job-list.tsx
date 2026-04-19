@@ -1,28 +1,26 @@
-import * as React from "react"
-import { useTranslation } from "react-i18next"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
-  IconPlayerPlay,
   IconPencil,
-  IconTrash,
+  IconPlayerPlay,
+  IconPlus,
   IconToggleLeft,
   IconToggleRight,
-  IconPlus,
+  IconTrash,
 } from "@tabler/icons-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
+import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 import {
-  listCronJobs,
   deleteCronJob,
-  enableCronJob,
   disableCronJob,
+  enableCronJob,
+  listCronJobs,
   triggerCronJob,
 } from "@/api/cron"
 import type { CronJob, CronSchedule } from "@/api/cron"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 dayjs.extend(relativeTime)
 
@@ -110,7 +110,7 @@ export function CronJobList({ onEdit, onNew }: CronJobListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex min-h-[200px] items-center justify-center">
         {t("labels.loading")}
       </div>
     )
@@ -126,14 +126,14 @@ export function CronJobList({ onEdit, onNew }: CronJobListProps) {
       </div>
 
       {jobs.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+        <div className="text-muted-foreground flex min-h-[200px] items-center justify-center">
           {t("pages.cron.empty.noJobs")}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/40">
+              <tr className="bg-muted/40 border-b">
                 <th className="px-4 py-2.5 text-left font-medium">
                   {t("pages.cron.table.name")}
                 </th>
@@ -158,7 +158,7 @@ export function CronJobList({ onEdit, onNew }: CronJobListProps) {
               {jobs.map((job) => (
                 <tr
                   key={job.id}
-                  className="border-b last:border-b-0 hover:bg-muted/20 transition-colors"
+                  className="hover:bg-muted/20 border-b transition-colors last:border-b-0"
                 >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export function CronJobList({ onEdit, onNew }: CronJobListProps) {
                       <span className="font-medium">{job.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                  <td className="text-muted-foreground px-4 py-2.5 font-mono text-xs">
                     {formatSchedule(job.schedule)}
                   </td>
                   <td className="px-4 py-2.5">
@@ -180,7 +180,7 @@ export function CronJobList({ onEdit, onNew }: CronJobListProps) {
                       <span className="text-muted-foreground">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
+                  <td className="text-muted-foreground px-4 py-2.5">
                     {job.state.lastRunAtMs
                       ? dayjs(job.state.lastRunAtMs).fromNow()
                       : "-"}

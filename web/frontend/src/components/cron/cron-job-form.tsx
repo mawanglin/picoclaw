@@ -1,10 +1,11 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { createCronJob, updateCronJob } from "@/api/cron"
 import type { CronJob, CronSchedule } from "@/api/cron"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -12,10 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 type ScheduleType = "oneTime" | "recurring" | "cron"
 
@@ -46,10 +46,13 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
   const isEdit = job !== null
 
   const [name, setName] = React.useState("")
-  const [scheduleType, setScheduleType] = React.useState<ScheduleType>("recurring")
+  const [scheduleType, setScheduleType] =
+    React.useState<ScheduleType>("recurring")
   const [datetime, setDatetime] = React.useState("")
   const [everyValue, setEveryValue] = React.useState("60")
-  const [everyUnit, setEveryUnit] = React.useState<"minutes" | "hours" | "days">("minutes")
+  const [everyUnit, setEveryUnit] = React.useState<
+    "minutes" | "hours" | "days"
+  >("minutes")
   const [cronExpr, setCronExpr] = React.useState("")
   const [timezone, setTimezone] = React.useState("")
   const [message, setMessage] = React.useState("")
@@ -122,7 +125,12 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
     mutationFn: (payload: {
       name: string
       schedule: CronSchedule
-      payload: { message: string; command?: string; channel?: string; to?: string }
+      payload: {
+        message: string
+        command?: string
+        channel?: string
+        to?: string
+      }
     }) => {
       if (isEdit && job) {
         return updateCronJob(job.id, payload)
@@ -131,7 +139,7 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
     },
     onSuccess: () => {
       toast.success(
-        isEdit ? t("pages.cron.toast.updated") : t("pages.cron.toast.created")
+        isEdit ? t("pages.cron.toast.updated") : t("pages.cron.toast.created"),
       )
       queryClient.invalidateQueries({ queryKey: ["cron-jobs"] })
       onOpenChange(false)
@@ -183,9 +191,7 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
             {!showAdvanced ? (
               <>
                 <div className="flex gap-2">
-                  {(
-                    ["oneTime", "recurring", "cron"] as const
-                  ).map((st) => (
+                  {(["oneTime", "recurring", "cron"] as const).map((st) => (
                     <button
                       key={st}
                       type="button"
@@ -220,11 +226,11 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
                       onChange={(e) => setEveryValue(e.target.value)}
                     />
                     <select
-                      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                      className="border-border bg-background rounded-md border px-3 py-1.5 text-sm"
                       value={everyUnit}
                       onChange={(e) =>
                         setEveryUnit(
-                          e.target.value as "minutes" | "hours" | "days"
+                          e.target.value as "minutes" | "hours" | "days",
                         )
                       }
                     >
@@ -271,7 +277,7 @@ export function CronJobForm({ open, onOpenChange, job }: CronJobFormProps) {
 
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground text-xs transition-colors"
               onClick={() => {
                 setShowAdvanced((v) => !v)
                 if (!showAdvanced) setScheduleType("cron")

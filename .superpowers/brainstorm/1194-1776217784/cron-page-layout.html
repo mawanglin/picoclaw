@@ -1,0 +1,284 @@
+<h2>Cron Management Page Layout</h2>
+<p class="subtitle">Route: /config/cron — Full management panel wireframe</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Single Page with Tabs</h3>
+      <p>All content in one page, tabs to switch between sections</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Single Page with Scroll Sections</h3>
+      <p>Stats at top, job list in middle, history at bottom — all visible by scrolling</p>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:2rem">Layout A: Tabs</h3>
+<div class="mockup">
+  <div class="mockup-header">Preview: /config/cron (Tab Layout)</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.6;background:#1a1a2e;color:#e0e0e0;padding:1.5rem">
+    <!-- Stats Bar -->
+    <div style="display:flex;gap:1rem;margin-bottom:1.2rem">
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Total Jobs</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#4fc3f7">8</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Enabled</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#66bb6a">5</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">24h Runs</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#ffa726">23</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Success Rate</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#66bb6a">95.6%</div>
+      </div>
+      <div style="flex:2;background:#16213e;border-radius:8px;padding:0.8rem">
+        <div style="color:#888;font-size:11px;margin-bottom:4px">7-Day Trend</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:32px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:20px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:2px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:24px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:18px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:3px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:28px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:22px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:1px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:26px;border-radius:2px"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;justify-content:flex-end">
+            <div style="background:#66bb6a;height:16px;border-radius:2px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;margin-bottom:1rem;border-bottom:2px solid #333">
+      <div style="padding:0.5rem 1rem;border-bottom:2px solid #4fc3f7;color:#4fc3f7;margin-bottom:-2px;font-weight:bold">Jobs</div>
+      <div style="padding:0.5rem 1rem;color:#888">Execution History</div>
+    </div>
+
+    <!-- Job List (active tab) -->
+    <div style="display:flex;justify-content:space-between;margin-bottom:0.8rem">
+      <div style="color:#ccc;font-weight:bold">Scheduled Jobs</div>
+      <div style="background:#4fc3f7;color:#000;padding:3px 12px;border-radius:4px;font-size:12px;cursor:pointer">+ New Job</div>
+    </div>
+
+    <!-- Table Header -->
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:6px 8px;background:#0f1729;border-radius:4px;font-size:11px;color:#888;margin-bottom:4px">
+      <div>NAME</div><div>SCHEDULE</div><div>CHANNEL</div><div>LAST RUN</div><div>STATUS</div><div>ACTIONS</div>
+    </div>
+
+    <!-- Row 1 -->
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div><span style="color:#66bb6a">●</span> Daily Status Check</div>
+      <div style="color:#aaa">0 9 * * * (cron)</div>
+      <div><span style="background:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:10px">telegram</span></div>
+      <div style="color:#aaa">2 min ago</div>
+      <div><span style="color:#66bb6a">OK</span></div>
+      <div style="display:flex;gap:6px;font-size:11px">
+        <span style="color:#4fc3f7;cursor:pointer">▶</span>
+        <span style="color:#ffa726;cursor:pointer">✎</span>
+        <span style="color:#888;cursor:pointer">⏸</span>
+        <span style="color:#ef5350;cursor:pointer">✕</span>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div><span style="color:#66bb6a">●</span> Hourly News Summary</div>
+      <div style="color:#aaa">every 1h</div>
+      <div><span style="background:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:10px">discord</span></div>
+      <div style="color:#aaa">38 min ago</div>
+      <div><span style="color:#66bb6a">OK</span></div>
+      <div style="display:flex;gap:6px;font-size:11px">
+        <span style="color:#4fc3f7;cursor:pointer">▶</span>
+        <span style="color:#ffa726;cursor:pointer">✎</span>
+        <span style="color:#888;cursor:pointer">⏸</span>
+        <span style="color:#ef5350;cursor:pointer">✕</span>
+      </div>
+    </div>
+
+    <!-- Row 3 (disabled) -->
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center;opacity:0.5">
+      <div><span style="color:#888">●</span> Weekly Report</div>
+      <div style="color:#666">0 10 * * 1 (cron)</div>
+      <div><span style="background:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:10px">slack</span></div>
+      <div style="color:#666">3 days ago</div>
+      <div><span style="color:#888">disabled</span></div>
+      <div style="display:flex;gap:6px;font-size:11px">
+        <span style="color:#4fc3f7;cursor:pointer">▶</span>
+        <span style="color:#ffa726;cursor:pointer">✎</span>
+        <span style="color:#66bb6a;cursor:pointer">▶️</span>
+        <span style="color:#ef5350;cursor:pointer">✕</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:2rem">Layout B: Scroll Sections</h3>
+<div class="mockup">
+  <div class="mockup-header">Preview: /config/cron (Scroll Layout)</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.6;background:#1a1a2e;color:#e0e0e0;padding:1.5rem">
+    <!-- Same Stats Bar -->
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem">
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Total Jobs</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#4fc3f7">8</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Enabled</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#66bb6a">5</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">24h Runs</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#ffa726">23</div>
+      </div>
+      <div style="flex:1;background:#16213e;border-radius:8px;padding:0.8rem;text-align:center">
+        <div style="color:#888;font-size:11px">Success Rate</div>
+        <div style="font-size:1.4rem;font-weight:bold;color:#66bb6a">95.6%</div>
+      </div>
+    </div>
+
+    <!-- 7-Day Trend (full width) -->
+    <div style="background:#16213e;border-radius:8px;padding:1rem;margin-bottom:1.5rem">
+      <div style="color:#888;font-size:11px;margin-bottom:8px">7-Day Execution Trend</div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:60px">
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:30px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:3px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 11</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:36px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 12</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:28px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:4px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 13</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:42px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 14</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:34px;border-radius:2px"></div>
+            <div style="background:#ef5350;height:2px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 15</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:40px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 16</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="display:flex;flex-direction:column;gap:1px;justify-content:flex-end;height:48px">
+            <div style="background:#66bb6a;height:24px;border-radius:2px"></div>
+          </div>
+          <div style="color:#666;font-size:9px;margin-top:4px">Apr 17</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:10px">
+        <span><span style="color:#66bb6a">■</span> Success</span>
+        <span><span style="color:#ef5350">■</span> Error</span>
+      </div>
+    </div>
+
+    <!-- Job List Section -->
+    <div style="display:flex;justify-content:space-between;margin-bottom:0.8rem;align-items:center">
+      <div style="color:#ccc;font-weight:bold;font-size:14px">Scheduled Jobs</div>
+      <div style="background:#4fc3f7;color:#000;padding:4px 14px;border-radius:4px;font-size:12px;cursor:pointer">+ New Job</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:6px 8px;background:#0f1729;border-radius:4px;font-size:11px;color:#888;margin-bottom:4px">
+      <div>NAME</div><div>SCHEDULE</div><div>CHANNEL</div><div>LAST RUN</div><div>STATUS</div><div>ACTIONS</div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div><span style="color:#66bb6a">●</span> Daily Status Check</div>
+      <div style="color:#aaa">0 9 * * *</div>
+      <div><span style="background:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:10px">telegram</span></div>
+      <div style="color:#aaa">2 min ago</div>
+      <div><span style="color:#66bb6a">OK</span></div>
+      <div style="display:flex;gap:6px;font-size:11px">▶ ✎ ⏸ ✕</div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1.2fr 1fr 1.2fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div><span style="color:#66bb6a">●</span> Hourly News</div>
+      <div style="color:#aaa">every 1h</div>
+      <div><span style="background:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:10px">discord</span></div>
+      <div style="color:#aaa">38 min ago</div>
+      <div><span style="color:#66bb6a">OK</span></div>
+      <div style="display:flex;gap:6px;font-size:11px">▶ ✎ ⏸ ✕</div>
+    </div>
+
+    <!-- Divider -->
+    <div style="margin:1.5rem 0;border-top:1px solid #333"></div>
+
+    <!-- Execution History Section -->
+    <div style="display:flex;justify-content:space-between;margin-bottom:0.8rem;align-items:center">
+      <div style="color:#ccc;font-weight:bold;font-size:14px">Execution History</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select style="background:#16213e;color:#aaa;border:1px solid #333;padding:3px 8px;border-radius:4px;font-size:11px">
+          <option>All Jobs</option>
+          <option>Daily Status Check</option>
+          <option>Hourly News</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.5fr 1.5fr 0.8fr 1fr 1fr 1fr;gap:8px;padding:6px 8px;background:#0f1729;border-radius:4px;font-size:11px;color:#888;margin-bottom:4px">
+      <div>JOB</div><div>TIME</div><div>TRIGGER</div><div>STATUS</div><div>DURATION</div><div>OUTPUT</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1.5fr 0.8fr 1fr 1fr 1fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div>Daily Status Check</div>
+      <div style="color:#aaa">Apr 17, 09:00:02</div>
+      <div><span style="font-size:10px;color:#888">scheduled</span></div>
+      <div><span style="color:#66bb6a">OK</span></div>
+      <div style="color:#aaa">1.2s</div>
+      <div style="color:#4fc3f7;cursor:pointer;font-size:11px">View →</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1.5fr 0.8fr 1fr 1fr 1fr;gap:8px;padding:8px;border-bottom:1px solid #222;font-size:12px;align-items:center">
+      <div>Hourly News</div>
+      <div style="color:#aaa">Apr 17, 08:00:01</div>
+      <div><span style="font-size:10px;color:#888">scheduled</span></div>
+      <div><span style="color:#ef5350">Error</span></div>
+      <div style="color:#aaa">5.1s</div>
+      <div style="color:#4fc3f7;cursor:pointer;font-size:11px">View →</div>
+    </div>
+    <div style="text-align:center;padding:12px;color:#666;font-size:12px">
+      Page 1 of 5 &nbsp; ← Prev | Next →
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Click to select your preferred layout. Both have the same functionality — the difference is information density vs. focus.</p>

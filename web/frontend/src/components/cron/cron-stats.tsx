@@ -1,6 +1,6 @@
-import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
+import { useTranslation } from "react-i18next"
 
 import { getCronStats, getCronTrend } from "@/api/cron"
 import type { TrendEntry } from "@/api/cron"
@@ -15,10 +15,10 @@ function StatCard({
   loading: boolean
 }) {
   return (
-    <div className="flex-1 rounded-lg border bg-card p-4">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+    <div className="bg-card flex-1 rounded-lg border p-4">
+      <div className="text-muted-foreground text-xs font-medium">{label}</div>
       {loading ? (
-        <div className="mt-1 h-7 w-16 animate-pulse rounded bg-muted" />
+        <div className="bg-muted mt-1 h-7 w-16 animate-pulse rounded" />
       ) : (
         <div className="mt-1 text-2xl font-semibold tracking-tight">
           {value}
@@ -42,7 +42,7 @@ function TrendChart({
       <div className="flex h-40 items-end gap-2">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="flex-1">
-            <div className="h-20 animate-pulse rounded-t bg-muted" />
+            <div className="bg-muted h-20 animate-pulse rounded-t" />
           </div>
         ))}
       </div>
@@ -54,7 +54,7 @@ function TrendChart({
 
   if (allZero) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-40 items-center justify-center text-sm">
         {t("pages.cron.stats.noData")}
       </div>
     )
@@ -94,13 +94,13 @@ function TrendChart({
         {data.map((entry) => (
           <div
             key={entry.date}
-            className="flex-1 text-center text-[10px] text-muted-foreground"
+            className="text-muted-foreground flex-1 text-center text-[10px]"
           >
             {dayjs(entry.date).format("MM/DD")}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-4 text-xs">
         <span className="flex items-center gap-1">
           <span className="inline-block size-2 rounded-sm bg-green-500" />
           {t("pages.cron.stats.success")}
@@ -151,14 +151,12 @@ export function CronStats() {
         />
         <StatCard
           label={t("pages.cron.stats.successRate")}
-          value={
-            stats ? `${Math.round(stats.successRate24h * 100)}%` : "0%"
-          }
+          value={stats ? `${Math.round(stats.successRate24h * 100)}%` : "0%"}
           loading={statsLoading}
         />
       </div>
 
-      <div className="rounded-lg border bg-card p-4">
+      <div className="bg-card rounded-lg border p-4">
         <div className="mb-3 text-sm font-medium">
           {t("pages.cron.stats.trend7d")}
         </div>
