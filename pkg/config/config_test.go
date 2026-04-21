@@ -760,6 +760,28 @@ func TestDefaultConfig_WebPreferNativeEnabled(t *testing.T) {
 	}
 }
 
+func TestDefaultConfig_WebProviderIsAuto(t *testing.T) {
+	cfg := DefaultConfig()
+	if cfg.Tools.Web.Provider != "auto" {
+		t.Fatalf("DefaultConfig().Tools.Web.Provider = %q, want auto", cfg.Tools.Web.Provider)
+	}
+}
+
+func TestConfigExample_WebProviderIsAuto(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "config", "config.example.json"))
+	if err != nil {
+		t.Fatalf("ReadFile(config.example.json) error: %v", err)
+	}
+
+	var cfg Config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("Unmarshal(config.example.json) error: %v", err)
+	}
+	if cfg.Tools.Web.Provider != "auto" {
+		t.Fatalf("config.example.json tools.web.provider = %q, want auto", cfg.Tools.Web.Provider)
+	}
+}
+
 func TestDefaultConfig_ToolFeedbackDisabled(t *testing.T) {
 	cfg := DefaultConfig()
 	if cfg.Agents.Defaults.ToolFeedback.Enabled {
