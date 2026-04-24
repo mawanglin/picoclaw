@@ -33,6 +33,7 @@ func (p *Pipeline) ExecuteTools(
 
 	ts.setPhase(TurnPhaseTools)
 	messages := exec.messages
+	handledAttachments := make([]providers.Attachment, 0)
 
 toolLoop:
 	for i, tc := range normalizedToolCalls {
@@ -79,21 +80,16 @@ toolLoop:
 						},
 					)
 
-					if al.cfg.Agents.Defaults.IsToolFeedbackEnabled() &&
-						ts.channel != "" &&
-						!ts.opts.SuppressToolFeedback {
-						argsJSON, _ := json.Marshal(toolArgs)
-						feedbackPreview := utils.Truncate(
-							string(argsJSON),
+					if shouldPublishToolFeedback(al.cfg, ts) {
+						toolFeedbackExplanation := toolFeedbackExplanationForToolCall(
+							exec.response,
+							tc,
+							messages,
 							al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength(),
 						)
-						feedbackMsg := utils.FormatToolFeedbackMessage(toolName, feedbackPreview)
+						feedbackMsg := utils.FormatToolFeedbackMessage(toolName, toolFeedbackExplanation)
 						fbCtx, fbCancel := context.WithTimeout(turnCtx, 3*time.Second)
-						_ = al.bus.PublishOutbound(fbCtx, bus.OutboundMessage{
-							Channel: ts.channel,
-							ChatID:  ts.chatID,
-							Content: feedbackMsg,
-						})
+						_ = al.bus.PublishOutbound(fbCtx, outboundMessageForTurnWithKind(ts, feedbackMsg, messageKindToolFeedback))
 						fbCancel()
 					}
 
@@ -130,7 +126,16 @@ toolLoop:
 						outboundMedia := bus.OutboundMediaMessage{
 							Channel: ts.channel,
 							ChatID:  ts.chatID,
-							Parts:   parts,
+							Context: outboundContextFromInbound(
+								ts.opts.Dispatch.InboundContext,
+								ts.channel,
+								ts.chatID,
+								ts.opts.Dispatch.ReplyToMessageID(),
+							),
+							AgentID:    ts.agent.ID,
+							SessionKey: ts.sessionKey,
+							Scope:      outboundScopeFromSessionScope(ts.opts.Dispatch.SessionScope),
+							Parts:      parts,
 						}
 						if al.channelManager != nil && ts.channel != "" && !constants.IsInternalChannel(ts.channel) {
 							if err := al.channelManager.SendMedia(ctx, outboundMedia); err != nil {
@@ -144,6 +149,11 @@ toolLoop:
 									})
 								hookResult.IsError = true
 								hookResult.ForLLM = fmt.Sprintf("failed to deliver attachment: %v", err)
+							} else {
+								handledAttachments = append(
+									handledAttachments,
+									buildProviderAttachments(al.mediaStore, hookResult.Media)...,
+								)
 							}
 						} else if al.bus != nil {
 							al.bus.PublishOutboundMedia(ctx, outboundMedia)
@@ -347,16 +357,16 @@ toolLoop:
 			},
 		)
 
-		if al.cfg.Agents.Defaults.IsToolFeedbackEnabled() &&
-			ts.channel != "" &&
-			!ts.opts.SuppressToolFeedback {
-			feedbackPreview := utils.Truncate(
-				string(argsJSON),
+		if shouldPublishToolFeedback(al.cfg, ts) {
+			toolFeedbackExplanation := toolFeedbackExplanationForToolCall(
+				exec.response,
+				tc,
+				messages,
 				al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength(),
 			)
-			feedbackMsg := utils.FormatToolFeedbackMessage(tc.Name, feedbackPreview)
+			feedbackMsg := utils.FormatToolFeedbackMessage(toolName, toolFeedbackExplanation)
 			fbCtx, fbCancel := context.WithTimeout(turnCtx, 3*time.Second)
-			_ = al.bus.PublishOutbound(fbCtx, outboundMessageForTurn(ts, feedbackMsg))
+			_ = al.bus.PublishOutbound(fbCtx, outboundMessageForTurnWithKind(ts, feedbackMsg, messageKindToolFeedback))
 			fbCancel()
 		}
 
@@ -503,6 +513,11 @@ toolLoop:
 							"error":    err.Error(),
 						})
 					toolResult = tools.ErrorResult(fmt.Sprintf("failed to deliver attachment: %v", err)).WithError(err)
+				} else {
+					handledAttachments = append(
+						handledAttachments,
+						buildProviderAttachments(al.mediaStore, toolResult.Media)...,
+					)
 				}
 			} else if al.bus != nil {
 				al.bus.PublishOutboundMedia(ctx, outboundMedia)
@@ -656,11 +671,12 @@ toolLoop:
 	// No pending steering: finalize or break depending on allResponsesHandled
 	if exec.allResponsesHandled {
 		summaryMsg := providers.Message{
-			Role:    "assistant",
-			Content: handledToolResponseSummary,
+			Role:        "assistant",
+			Content:     handledToolResponseSummary,
+			Attachments: append([]providers.Attachment(nil), handledAttachments...),
 		}
 		if !ts.opts.NoHistory {
-			ts.agent.Sessions.AddMessage(ts.sessionKey, summaryMsg.Role, summaryMsg.Content)
+			ts.agent.Sessions.AddFullMessage(ts.sessionKey, summaryMsg)
 			ts.recordPersistedMessage(summaryMsg)
 			ts.ingestMessage(turnCtx, al, summaryMsg)
 			if err := ts.agent.Sessions.Save(ts.sessionKey); err != nil {
