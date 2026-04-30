@@ -65,6 +65,11 @@ func Test_markdownToTelegramHTML(t *testing.T) {
 			input:    "a & b < c > d",
 			expected: "a &amp; b &lt; c &gt; d",
 		},
+		{
+			name:     "code block with language",
+			input:    "```json\n{\n  \"path\": \"README.md\"\n}\n```",
+			expected: "<pre><code>{\n  \"path\": \"README.md\"\n}\n</code></pre>",
+		},
 	}
 
 	for _, tc := range cases {
