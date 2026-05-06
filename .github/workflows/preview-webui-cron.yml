@@ -1,16 +1,27 @@
-name: Nightly Build
+name: WebUI Cron Preview
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+    branches:
+      - feat/webui-cron-management
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "ROADMAP.md"
+      - "CONTRIBUTING.md"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Cancel any in-flight preview build for this branch when a new commit lands.
+concurrency:
+  group: preview-webui-cron-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  nightly:
-    name: Nightly Build
+  preview:
+    name: Build & Publish Preview
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,14 +39,14 @@ jobs:
           SHA=$(git rev-parse --short=8 HEAD)
           BASE_VERSION=$(git describe --tags --match "v*" --exclude "*nightly*" --exclude "*preview*" --abbrev=0 2>/dev/null || true)
           if [ -z "$BASE_VERSION" ] || [ "$BASE_VERSION" = "v0.0.0" ]; then
-            VERSION="v0.0.0-nightly.${DATE}.${SHA}"
+            VERSION="v0.0.0-cron-preview.${DATE}.${SHA}"
           else
-            VERSION="${BASE_VERSION}-nightly.${DATE}.${SHA}"
+            VERSION="${BASE_VERSION}-cron-preview.${DATE}.${SHA}"
           fi
 
-          COMPARE_URL="https://github.com/${{ github.repository }}/commits/main"
+          COMPARE_URL="https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}"
           if [ -n "$BASE_VERSION" ] && [ "$BASE_VERSION" != "v0.0.0" ]; then
-            COMPARE_URL="https://github.com/${{ github.repository }}/compare/${BASE_VERSION}...main"
+            COMPARE_URL="https://github.com/${{ github.repository }}/compare/${BASE_VERSION}...${{ github.ref_name }}"
           fi
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
@@ -60,87 +71,69 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/frontend/pnpm-lock.yaml
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Install zip
         run: sudo apt-get install -y zip
 
       - name: Create local tag for GoReleaser
         run: git tag "${{ steps.version.outputs.version }}"
 
-      - name: Run GoReleaser
+      - name: Run GoReleaser (skip docker & notarize)
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: ~> v2
-          args: release --clean
+          args: release --clean --skip=docker --skip=notarize
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-          DOCKERHUB_IMAGE_NAME: ${{ vars.DOCKERHUB_REPOSITORY }}
           GOVERSION: ${{ steps.setup-go.outputs.go-version }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.version }}
           INCLUDE_ANDROID_BUNDLE: "true"
+          # NIGHTLY_BUILD reuses goreleaser's release.disable gate so we can
+          # publish the GitHub Release ourselves below with rolling tag + notes.
           NIGHTLY_BUILD: "true"
-          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
 
-      - name: Update nightly release
+      - name: Update preview release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          PREVIEW_TAG: webui-cron-preview
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           CHANGELOG='${{ steps.version.outputs.changelog }}'
           NOTES=$(cat <<EOF
-          Nightly build for **${VERSION}**
+          WebUI Cron Management preview build for **${VERSION}**
 
-          This is an automated build and may be unstable. Use with caution.
+          Source branch: \`${BRANCH}\` @ \`$(git rev-parse --short HEAD)\`
+
+          This is an automated preview build of the **feat/webui-cron-management** branch.
+          It is NOT for production use and may be unstable.
 
           ${CHANGELOG}
           EOF
           )
 
-          # Delete existing nightly release and tag
-          gh release delete nightly --cleanup-tag -y 2>/dev/null || true
+          # Drop existing preview release and tag (rolling tag, always overwritten).
+          gh release delete "$PREVIEW_TAG" --cleanup-tag -y 2>/dev/null || true
 
-          # Force-update nightly tag to current HEAD
+          # Force-update preview tag to the current commit.
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -fa nightly -m "Nightly build ${VERSION}"
-          git push origin nightly
+          git tag -fa "$PREVIEW_TAG" -m "WebUI Cron preview ${VERSION}"
+          git push origin "$PREVIEW_TAG" --force
 
-          # Collect release artifacts from goreleaser dist/
+          # Collect release artifacts produced by GoReleaser.
           ASSETS=()
           for f in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/checksums.txt build/picoclaw-android-universal.zip; do
             [ -f "$f" ] && ASSETS+=("$f")
           done
 
-          # Create nightly release (prerelease, NOT latest)
-          gh release create nightly \
-            --title "Nightly Build" \
+          # Create preview release: prerelease, NOT marked latest.
+          gh release create "$PREVIEW_TAG" \
+            --title "WebUI Cron Management Preview" \
             --notes "$NOTES" \
-            --target "${{ github.sha }}" \
+            --target "$COMMIT_SHA" \
             --prerelease \
             --latest=false \
             "${ASSETS[@]}"
