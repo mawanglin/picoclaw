@@ -156,3 +156,29 @@ gh release delete webui-cron-preview --cleanup-tag -y
 ```
 
 下次 push 后会重新生成。
+
+---
+
+## 本次接入的改动范围
+
+为引入 `WebUI Cron Preview` 这个流程，仓库整体改动如下 —— **新增 1 个 workflow + 2 处配套小改动 + 1 份文档**：
+
+| 类型 | 文件 | 性质 |
+|------|------|------|
+| ➕ 新增 | `.github/workflows/preview-webui-cron.yml` | **新 workflow：`WebUI Cron Preview`** |
+| ✏️ 改动 | `.goreleaser.yaml` | `git.ignore_tags` 多加 2 行（pattern） |
+| ✏️ 改动 | `.github/workflows/nightly.yml` | `git describe` 命令多加 `--exclude "*preview*"` |
+| ➕ 新增 | `docs/operations/preview-release-webui-cron.md` | 本说明文档 |
+
+### 关键澄清
+
+- ✅ **没有**改动 `release.yml`、`create-tag.yml`、`build.yml`、`docker-build.yml` 等任何现有 workflow 的功能
+- ✅ **没有**修改 goreleaser 的构建矩阵、产物列表、Docker 配置
+- ✅ **没有**碰任何业务代码（Go / 前端）
+
+### 那两处配套小改动的作用
+
+1. **`.goreleaser.yaml` 的 `ignore_tags`** —— 防御性改动，告诉 goreleaser 在"自动推断版本"时忽略我们的滚动 tag。当前流程用 `GORELEASER_CURRENT_TAG` 显式传版本，所以**不加也不会出错**，加了是为未来安全。
+2. **`nightly.yml` 的 `--exclude "*preview*"`** —— 防止 nightly 跑的时候，把 `webui-cron-preview` tag 误当成基线版本。这是**实际有用的**，因为我们的 preview 会推一个 git tag 到远端。
+
+所以真正"功能性新增"就是那个新 workflow；其余 3 处都是为了让它和已有体系干净共存的"修边"动作。
