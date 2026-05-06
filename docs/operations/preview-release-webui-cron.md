@@ -106,7 +106,7 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 | 文件 | 改动 |
 |------|------|
 | `.github/workflows/preview-webui-cron.yml` | 新增 |
-| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 两个 builds 的 `ignore` 列表加入 `linux/mipsle` 和 `netbsd/arm64`（`pkg/cron` 引入 `modernc.org/sqlite` → `modernc.org/libc` 不支持这两个平台） |
+| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 两个 builds 的 `ignore` 列表加入 `linux/mipsle`、`netbsd/arm64`、`freebsd/arm`（`pkg/cron` 引入 `modernc.org/sqlite` → `modernc.org/libc 1.70.0` 不支持这三个平台 —— 前两个缺少 capi 文件，第三个因 `libc_freebsd.go` 用了 64-bit-only 类型导致 32-bit FreeBSD 编译失败） |
 | `.github/workflows/nightly.yml` | `git describe` 加 `--exclude "*preview*"`，nightly 不再误把 preview tag 当基线 |
 
 ---

@@ -59,11 +59,17 @@ builds:
       - goos: netbsd
         goarch: arm
       # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
-      # libc 1.70.0 has linux/mips64le but not linux/mipsle, and netbsd/arm but not netbsd/arm64.
+      # libc 1.70.0:
+      #   - has linux/mips64le but not linux/mipsle
+      #   - has netbsd/arm but not netbsd/arm64
+      #   - libc_freebsd.go has no GOARCH build tag and uses 64-bit-only types
+      #     (size_t/off_t as uint64/int64), so 32-bit FreeBSD (arm) does not compile.
       - goos: linux
         goarch: mipsle
       - goos: netbsd
         goarch: arm64
+      - goos: freebsd
+        goarch: arm
 
   - id: picoclaw-launcher
     binary: picoclaw-launcher
@@ -108,11 +114,17 @@ builds:
       - goos: netbsd
         goarch: arm
       # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
-      # libc 1.70.0 has linux/mips64le but not linux/mipsle, and netbsd/arm but not netbsd/arm64.
+      # libc 1.70.0:
+      #   - has linux/mips64le but not linux/mipsle
+      #   - has netbsd/arm but not netbsd/arm64
+      #   - libc_freebsd.go has no GOARCH build tag and uses 64-bit-only types
+      #     (size_t/off_t as uint64/int64), so 32-bit FreeBSD (arm) does not compile.
       - goos: linux
         goarch: mipsle
       - goos: netbsd
         goarch: arm64
+      - goos: freebsd
+        goarch: arm
 
 dockers_v2:
   - id: picoclaw
