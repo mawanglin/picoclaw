@@ -1,3 +1,5 @@
+//go:build !mipsle && !netbsd && !(freebsd && arm)
+
 package cron
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func tempHistoryStore(t *testing.T) *HistoryStore {
+func tempHistoryStore(t *testing.T) HistoryStore {
 	t.Helper()
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "history.db")

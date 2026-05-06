@@ -11,12 +11,12 @@ import (
 
 type CronAPIHandler struct {
 	service   *CronService
-	history   *HistoryStore
+	history   HistoryStore
 	authToken string
 	allowCmd  bool
 }
 
-func NewCronAPIHandler(service *CronService, history *HistoryStore, authToken string, allowCmd bool) *CronAPIHandler {
+func NewCronAPIHandler(service *CronService, history HistoryStore, authToken string, allowCmd bool) *CronAPIHandler {
 	return &CronAPIHandler{service: service, history: history, authToken: authToken, allowCmd: allowCmd}
 }
 

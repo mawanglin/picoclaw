@@ -106,7 +106,12 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 | 文件 | 改动 |
 |------|------|
 | `.github/workflows/preview-webui-cron.yml` | 新增 |
-| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 收紧 build 矩阵 —— 移除 `netbsd`，并 ignore `linux/mipsle` + `freebsd/arm`，详见下方「Build 矩阵约束」 |
+| `.goreleaser.yaml` | 仅 `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`（build 矩阵保持与上游一致，详见下方「Build 矩阵兼容」） |
+| `pkg/cron/history.go` | 拆为接口：抽出共享类型 + `HistoryStore` 接口；无 build tag |
+| `pkg/cron/history_sqlite.go` | 新增：原 SQLite 实现，build tag `!mipsle && !netbsd && !(freebsd && arm)` |
+| `pkg/cron/history_unsupported.go` | 新增：no-op stub，build tag `mipsle \|\| netbsd \|\| (freebsd && arm)` |
+| `pkg/cron/api.go` | `*HistoryStore` 字段/参数改为 `HistoryStore` 接口 |
+| `pkg/gateway/gateway.go` | `*cron.HistoryStore` 字段/返回值改为 `cron.HistoryStore` 接口 |
 | `.github/workflows/nightly.yml` | `git describe` 加 `--exclude "*preview*"`，nightly 不再误把 preview tag 当基线 |
 
 ---
@@ -130,44 +135,43 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 
 ---
 
-## Build 矩阵约束（modernc.org/sqlite + libc）
+## Build 矩阵兼容（modernc.org/sqlite + libc）
 
-`pkg/cron` 引入了 `modernc.org/sqlite v1.48.2` → `modernc.org/libc v1.70.0`。这两个包是 SQLite C 代码的纯 Go 移植，平台支持有断层。原先 18 个目标里有 4 个被迫剔除：
+`pkg/cron/history.go` 用 `modernc.org/sqlite v1.48.2` → `modernc.org/libc v1.70.0` 持久化执行历史。这两个包是 SQLite C 代码的纯 Go 移植，**对 `linux/mipsle`、`netbsd`、`freebsd/arm` 这三类平台支持有断层**：
 
-| 目标 | 失败原因 |
-|------|---------|
+| 目标 | 不支持原因 |
+|------|-----------|
 | `linux/mipsle` | libc 1.70.0 只移植了 `linux/mips64le`，没有 `mipsle` 的 capi 文件 |
-| `netbsd/arm64` | libc 1.70.0 只移植了 `netbsd/arm`，没有 `arm64` 的 capi 文件 |
+| `netbsd/*` | libc 缺 `netbsd/arm64` capi；sqlite 的 `sqlite_netbsd_amd64.go` 还引用了不存在的 `mutex.enter/leave` 方法 |
 | `freebsd/arm` (32-bit) | `libc_freebsd.go` 无 GOARCH build tag 但用 64-bit-only 类型（`size_t/off_t` 写死 `uint64/int64`），32-bit FreeBSD 编译失败 |
-| `netbsd/amd64` | `sqlite_netbsd_amd64.go` 引用了不存在的 `mutex.enter/leave` 方法（sqlite 自身的 netbsd 移植 bug） |
 
-最终生效的实现方式：
+### 解决方案：build tag 隔离 + stub fallback
 
-- **完全移除 `netbsd`** —— 原本 netbsd 只剩 `amd64` 一个目标可用，现在它也坏了，整个 OS 没有可用目标，直接从 `goos` 列表里删掉
-- **保留 `freebsd`**，但 ignore 掉 `freebsd/arm`（amd64/arm64 仍可用）
-- **保留 `linux`**，但 ignore 掉 `mipsle`
-
-最终矩阵 14 个 → 13 个目标：
+**不剔除任何平台**，而是抄上游 `pkg/agent/context_seahorse.go` 的套路 —— 把 sqlite 实现按平台拆分：
 
 ```
-linux:   amd64, arm64, riscv64, loong64, arm (v6/v7), s390x   (8)
-windows: amd64, arm64                                          (2)
-darwin:  amd64, arm64                                          (2)
-freebsd: amd64, arm64                                          (2)
-（picoclaw + picoclaw-launcher 各编一份）
+pkg/cron/
+├── history.go              ← 共享类型 + HistoryStore 接口（无 build tag，所有平台）
+├── history_sqlite.go       ← //go:build !mipsle && !netbsd && !(freebsd && arm)
+│                              真实 SQLite 实现（含 _ "modernc.org/sqlite" import）
+├── history_unsupported.go  ← //go:build mipsle || netbsd || (freebsd && arm)
+│                              no-op 实现：写入丢弃、查询返回空
+└── history_test.go         ← 同 sqlite 文件 build tag
 ```
 
-> ⚠️ 因为这是改的主 `.goreleaser.yaml`，nightly 和正式 release 也不再产出 `linux/mipsle`、`freebsd/arm`、`netbsd/*` 二进制。考虑这些平台用户极少（嵌入式 MIPS / 32-bit FreeBSD / NetBSD），可接受。
+两个实现文件的 build tag **互斥且全覆盖**——任意 GOOS/GOARCH 组合恰好选中一个文件。受限平台编译时根本看不到 `modernc.org/sqlite` 的 import，自然不触发 modernc/libc 的平台问题。
 
-### 未来再撞新平台问题怎么办
+`NewHistoryStore` 的签名两边一致 `(string) (HistoryStore, error)`，调用方 `pkg/gateway/gateway.go` 完全无感知。受限平台上 cron 任务正常运行，只是历史视图（`/cron/history`、`/cron/stats`、`/cron/stats/trend`）返回空数据。
 
-按相同套路：
+### 何时需要扩展 build tag
+
+如果未来引入新的 sqlite-using 子模块，或者 modernc.org/libc 升级后又有新的平台问题，按以下流程：
 
 1. 先 grep 本机 `$GOPATH/pkg/mod/modernc.org/libc@<ver>/capi_*.go` 看 capi 文件是否存在
-2. 缺 capi → 直接 ignore
+2. 缺 capi → 在 build tag 排除该平台
 3. 有 capi 但运行时报类型错 → 看 `libc_<goos>.go` 是否对该 GOARCH 不友好
 4. 有 capi 但 sqlite 报 `mu.enter undefined` 等 → 看 `sqlite_<goos>_<arch>.go` 是不是 sqlite 自身的移植 bug
-5. 单一 GOARCH 加到 ignore；整个 GOOS 都坏就从 goos 移除并清理 ignore
+5. 同步更新 `history_sqlite.go`、`history_unsupported.go`、`history_test.go` 三个文件的 build tag，并保证两者**互斥且全覆盖**所有平台
 
 ---
 
@@ -180,7 +184,7 @@ freebsd: amd64, arm64                                          (2)
    - `pnpm build:backend` 失败 → 前端 lockfile 与 main 不同步
    - `winres` 失败 → 版本号格式 winres 不接受（参考 nightly 是否同样失败）
    - `gh release create` 401 → 检查 workflow 的 `permissions.contents: write`
-   - `build constraints exclude all Go files in modernc.org/libc/*` → 又有新平台不被 modernc/libc 支持了；按 `goos/goarch` 加到 `.goreleaser.yaml` 的 builds[].ignore 列表里（参考已有的 `linux/mipsle`、`netbsd/arm64` 条目）
+   - `build constraints exclude all Go files in modernc.org/libc/*` → 又有新平台不被 modernc/libc 支持了；按上面「何时需要扩展 build tag」流程处理 `pkg/cron/history_*.go` 的 tag
 
 ### 临时停用
 

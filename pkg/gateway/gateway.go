@@ -63,7 +63,7 @@ const (
 
 type services struct {
 	CronService      *cron.CronService
-	CronHistory      *cron.HistoryStore
+	CronHistory      cron.HistoryStore
 	HeartbeatService *heartbeat.HeartbeatService
 	MediaStore       media.MediaStore
 	ChannelManager   *channels.Manager
@@ -798,7 +798,7 @@ func setupCronTool(
 	restrict bool,
 	execTimeout time.Duration,
 	cfg *config.Config,
-) (*cron.CronService, *cron.HistoryStore, error) {
+) (*cron.CronService, cron.HistoryStore, error) {
 	cronStorePath := filepath.Join(workspace, "cron", "jobs.json")
 
 	cronService := cron.NewCronService(cronStorePath, nil)
