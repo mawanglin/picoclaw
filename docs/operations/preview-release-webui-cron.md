@@ -106,7 +106,7 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 | 文件 | 改动 |
 |------|------|
 | `.github/workflows/preview-webui-cron.yml` | 新增 |
-| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 两个 builds 的 `ignore` 列表加入 `linux/mipsle`、`netbsd/arm64`、`freebsd/arm`（`pkg/cron` 引入 `modernc.org/sqlite` → `modernc.org/libc 1.70.0` 不支持这三个平台 —— 前两个缺少 capi 文件，第三个因 `libc_freebsd.go` 用了 64-bit-only 类型导致 32-bit FreeBSD 编译失败） |
+| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 收紧 build 矩阵 —— 移除 `netbsd`，并 ignore `linux/mipsle` + `freebsd/arm`，详见下方「Build 矩阵约束」 |
 | `.github/workflows/nightly.yml` | `git describe` 加 `--exclude "*preview*"`，nightly 不再误把 preview tag 当基线 |
 
 ---
@@ -127,6 +127,47 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 
 - **想给 QA 看到 Docker 镜像**：去掉 `--skip=docker`，但 ghcr / dockerhub 的 tag 模板会输出 `nightly`（因为复用了 `NIGHTLY_BUILD=true`）会冲突——这块需要扩展 goreleaser 模板加一个 `PREVIEW_BUILD` 环境变量来区分
 - **想要每次都打正式 tag**：改用 `release.yml` 流程，先用 `create-tag.yml` 从本分支打 tag（需先把 `create-tag.yml` 的 `ref: main` 改为可选输入）
+
+---
+
+## Build 矩阵约束（modernc.org/sqlite + libc）
+
+`pkg/cron` 引入了 `modernc.org/sqlite v1.48.2` → `modernc.org/libc v1.70.0`。这两个包是 SQLite C 代码的纯 Go 移植，平台支持有断层。原先 18 个目标里有 4 个被迫剔除：
+
+| 目标 | 失败原因 |
+|------|---------|
+| `linux/mipsle` | libc 1.70.0 只移植了 `linux/mips64le`，没有 `mipsle` 的 capi 文件 |
+| `netbsd/arm64` | libc 1.70.0 只移植了 `netbsd/arm`，没有 `arm64` 的 capi 文件 |
+| `freebsd/arm` (32-bit) | `libc_freebsd.go` 无 GOARCH build tag 但用 64-bit-only 类型（`size_t/off_t` 写死 `uint64/int64`），32-bit FreeBSD 编译失败 |
+| `netbsd/amd64` | `sqlite_netbsd_amd64.go` 引用了不存在的 `mutex.enter/leave` 方法（sqlite 自身的 netbsd 移植 bug） |
+
+最终生效的实现方式：
+
+- **完全移除 `netbsd`** —— 原本 netbsd 只剩 `amd64` 一个目标可用，现在它也坏了，整个 OS 没有可用目标，直接从 `goos` 列表里删掉
+- **保留 `freebsd`**，但 ignore 掉 `freebsd/arm`（amd64/arm64 仍可用）
+- **保留 `linux`**，但 ignore 掉 `mipsle`
+
+最终矩阵 14 个 → 13 个目标：
+
+```
+linux:   amd64, arm64, riscv64, loong64, arm (v6/v7), s390x   (8)
+windows: amd64, arm64                                          (2)
+darwin:  amd64, arm64                                          (2)
+freebsd: amd64, arm64                                          (2)
+（picoclaw + picoclaw-launcher 各编一份）
+```
+
+> ⚠️ 因为这是改的主 `.goreleaser.yaml`，nightly 和正式 release 也不再产出 `linux/mipsle`、`freebsd/arm`、`netbsd/*` 二进制。考虑这些平台用户极少（嵌入式 MIPS / 32-bit FreeBSD / NetBSD），可接受。
+
+### 未来再撞新平台问题怎么办
+
+按相同套路：
+
+1. 先 grep 本机 `$GOPATH/pkg/mod/modernc.org/libc@<ver>/capi_*.go` 看 capi 文件是否存在
+2. 缺 capi → 直接 ignore
+3. 有 capi 但运行时报类型错 → 看 `libc_<goos>.go` 是否对该 GOARCH 不友好
+4. 有 capi 但 sqlite 报 `mu.enter undefined` 等 → 看 `sqlite_<goos>_<arch>.go` 是不是 sqlite 自身的移植 bug
+5. 单一 GOARCH 加到 ignore；整个 GOOS 都坏就从 goos 移除并清理 ignore
 
 ---
 

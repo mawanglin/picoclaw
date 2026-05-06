@@ -34,7 +34,6 @@ builds:
       - windows
       - darwin
       - freebsd
-      - netbsd
     goarch:
       - amd64
       - arm64
@@ -52,22 +51,10 @@ builds:
     ignore:
       - goos: windows
         goarch: arm
-      - goos: netbsd
-        goarch: s390x
-      - goos: netbsd
-        goarch: mips64
-      - goos: netbsd
-        goarch: arm
-      # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
-      # libc 1.70.0:
-      #   - has linux/mips64le but not linux/mipsle
-      #   - has netbsd/arm but not netbsd/arm64
-      #   - libc_freebsd.go has no GOARCH build tag and uses 64-bit-only types
-      #     (size_t/off_t as uint64/int64), so 32-bit FreeBSD (arm) does not compile.
+      # Dropped due to incompatibilities introduced by pkg/cron → modernc.org/sqlite + libc.
+      # See docs/operations/preview-release-webui-cron.md ("Build matrix constraints") for details.
       - goos: linux
         goarch: mipsle
-      - goos: netbsd
-        goarch: arm64
       - goos: freebsd
         goarch: arm
 
@@ -89,7 +76,6 @@ builds:
       - windows
       - darwin
       - freebsd
-      - netbsd
     goarch:
       - amd64
       - arm64
@@ -107,22 +93,10 @@ builds:
     ignore:
       - goos: windows
         goarch: arm
-      - goos: netbsd
-        goarch: s390x
-      - goos: netbsd
-        goarch: mips64
-      - goos: netbsd
-        goarch: arm
-      # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
-      # libc 1.70.0:
-      #   - has linux/mips64le but not linux/mipsle
-      #   - has netbsd/arm but not netbsd/arm64
-      #   - libc_freebsd.go has no GOARCH build tag and uses 64-bit-only types
-      #     (size_t/off_t as uint64/int64), so 32-bit FreeBSD (arm) does not compile.
+      # Dropped due to incompatibilities introduced by pkg/cron → modernc.org/sqlite + libc.
+      # See docs/operations/preview-release-webui-cron.md ("Build matrix constraints") for details.
       - goos: linux
         goarch: mipsle
-      - goos: netbsd
-        goarch: arm64
       - goos: freebsd
         goarch: arm
 
