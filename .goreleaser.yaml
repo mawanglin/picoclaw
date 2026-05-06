@@ -58,6 +58,12 @@ builds:
         goarch: mips64
       - goos: netbsd
         goarch: arm
+      # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
+      # libc 1.70.0 has linux/mips64le but not linux/mipsle, and netbsd/arm but not netbsd/arm64.
+      - goos: linux
+        goarch: mipsle
+      - goos: netbsd
+        goarch: arm64
 
   - id: picoclaw-launcher
     binary: picoclaw-launcher
@@ -101,6 +107,12 @@ builds:
         goarch: mips64
       - goos: netbsd
         goarch: arm
+      # Unsupported by modernc.org/libc (transitively required by pkg/cron via modernc.org/sqlite).
+      # libc 1.70.0 has linux/mips64le but not linux/mipsle, and netbsd/arm but not netbsd/arm64.
+      - goos: linux
+        goarch: mipsle
+      - goos: netbsd
+        goarch: arm64
 
 dockers_v2:
   - id: picoclaw

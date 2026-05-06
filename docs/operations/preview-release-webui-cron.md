@@ -106,7 +106,7 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
 | 文件 | 改动 |
 |------|------|
 | `.github/workflows/preview-webui-cron.yml` | 新增 |
-| `.goreleaser.yaml` | `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`，避免污染未来 release/nightly 的版本号计算 |
+| `.goreleaser.yaml` | 1) `git.ignore_tags` 加入 `webui-cron-preview` 和 `*-cron-preview.*`；2) 两个 builds 的 `ignore` 列表加入 `linux/mipsle` 和 `netbsd/arm64`（`pkg/cron` 引入 `modernc.org/sqlite` → `modernc.org/libc` 不支持这两个平台） |
 | `.github/workflows/nightly.yml` | `git describe` 加 `--exclude "*preview*"`，nightly 不再误把 preview tag 当基线 |
 
 ---
@@ -139,6 +139,7 @@ https://github.com/{owner}/{repo}/releases/tag/webui-cron-preview
    - `pnpm build:backend` 失败 → 前端 lockfile 与 main 不同步
    - `winres` 失败 → 版本号格式 winres 不接受（参考 nightly 是否同样失败）
    - `gh release create` 401 → 检查 workflow 的 `permissions.contents: write`
+   - `build constraints exclude all Go files in modernc.org/libc/*` → 又有新平台不被 modernc/libc 支持了；按 `goos/goarch` 加到 `.goreleaser.yaml` 的 builds[].ignore 列表里（参考已有的 `linux/mipsle`、`netbsd/arm64` 条目）
 
 ### 临时停用
 
